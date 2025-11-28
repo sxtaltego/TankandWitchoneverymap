@@ -1,0 +1,243 @@
+#include <sourcemod>
+#include <sdktools>    // For GameRules_GetProp();
+#include <left4dhooks> // https://forums.alliedmods.net/showthread.php?t=321696
+#include <colors>
+
+char mapName[64]; // Map (c8m1_apartment)
+// Every map has a progress percentage. From 0% to 100%
+
+bool tankIsAlive = false; // Fix for the bug with displaying the Tank spawn message
+bool GenericMap; // switch for designated map, used for flow calculation
+Handle g_hVsBossBuffer; // For correct calculation of the Tank spawn percentage
+
+char restrictedMaps[][32] =  {  // Restricted maps
+	"c5m5_bridge", "c7m1_docks", "c7m3_port", "c6m3_port", "c4m5_milltown_escape", "c13m2_southpinestream"
+};
+
+char earlyTankMaps[][32] =  {  // maps with 20-50% spawn
+	"c11m1_greenhouse","c4m2_sugarmill_a"
+};
+
+char lateTankMaps[][32] =  {  // maps with 60-80% spawn
+	"c1m1_hotel"
+};
+
+public Plugin myinfo = 
+{
+	name = "Tank&Witch on every map and !boss", 
+	author = "pa4H & Altego_SXT", 
+	description = "Spawn tank and witch in every chapter", 
+	version = "2.0", 
+	url = ""
+}
+
+public OnPluginStart()
+{
+	//RegConsoleCmd("sm_test", testTank, "");
+	
+	RegConsoleCmd("sm_boss", getBossFlowsm, "");
+	RegConsoleCmd("sm_tank", getBossFlowsm, "");
+	RegConsoleCmd("sm_witch", getBossFlowsm, "");
+	
+	HookEvent("round_start", RoundStartEvent, EventHookMode_PostNoCopy); // Server started
+	HookEvent("tank_spawn", TankNotify, EventHookMode_PostNoCopy); // Event notifying of the Tank's appearance
+	HookEvent("player_death", TankDead, EventHookMode_Pre);
+	
+	g_hVsBossBuffer = FindConVar("versus_boss_buffer"); // For correct calculation of the Tank spawn percentage
+	
+	LoadTranslations("pa4HTankSpawnNotify.phrases"); // translations/pa4HTankSpawnNotify.phrases.txt
+}
+
+// stock Action testTank(int client, int args) // DEBUG
+// {
+	// return Plugin_Handled;
+// }
+
+public RoundStartEvent(Handle event, const char[] name, bool dontBroadcast) // Server started
+{
+	tankIsAlive = false; // Allow "Tank appeared" to be displayed in chat
+	if (GameRules_GetProp("m_bInSecondHalfOfRound") == 0) { CreateTimer(0.4, AdjustBossFlow); } // After Round Start, set the Tank spawn percentage with a delay
+	
+}
+public Action AdjustBossFlow(Handle timer)
+{
+	L4D2Direct_SetVSTankToSpawnThisRound(0, true); // We command the Director to spawn the Tank in the 1st round
+	L4D2Direct_SetVSTankToSpawnThisRound(1, true); // We command in the 2nd round
+	L4D2Direct_SetVSWitchToSpawnThisRound(0, true); // Witch
+	L4D2Direct_SetVSWitchToSpawnThisRound(1, true);
+	
+	GetCurrentMap(mapName, sizeof(mapName)); //PrintToChatAll(mapName); // Get the map; //variable mapName is accessible since its function is public
+	for (int i = 0; i < sizeof(restrictedMaps); i++) // Iterate over the list of restricted maps
+	{
+		if (StrEqual(restrictedMaps[i], mapName)) // If the current map is in the list of restricted maps
+		{
+			L4D2Direct_SetVSTankToSpawnThisRound(0, false); // Forbid the Tank spawn
+			L4D2Direct_SetVSTankToSpawnThisRound(1, false);
+			break;
+		}
+	}
+	
+	if (L4D_IsMissionFinalMap() == true) // If playing the last map.The director does not spawn the Tank on the 1st and last map
+	{
+		randomSpawn(false); // Set the Tank and Witch spawn percentages WITHOUT randomness
+	}
+	else // If playing any other map
+	{
+		if (GameRules_GetProp("m_bInSecondHalfOfRound") == 0) // If the first half of the round
+		{
+			randomSpawn(true); // Set the Tank and Witch spawn percentages randomly
+		}
+	}
+	return Plugin_Stop;
+}
+
+public void randomSpawn(bool isRandom) // Function setting the Witch and Tank spawn percentage
+{
+	float rndFlowTank; // The percentage at which the Tank will appear
+	float rndFlowWitch; // The percentage at which the Witch will appear
+	GenericMap = true;
+	
+	if (isRandom) // Get a random percentage.If 0.9, it means it will be 80%. If 0.2, it means it will be 10%
+	{
+		rndFlowWitch = CalcFlow(GetRandomInt(20, 45)); // witch spawn does not need to be specific
+		
+		for (int i = 0; i < sizeof(earlyTankMaps); i++) // Iterate over the list of designated maps
+		{
+			if (StrEqual(earlyTankMaps[i], mapName)) // If the current map is in the list of designated maps
+			{
+				rndFlowTank = CalcFlow(GetRandomInt(20, 50));
+				GenericMap = false;
+				break;
+			}
+		}
+		if (GenericMap) //if first loop didn't match a mapname, continue to 2nd list
+		{
+			for (int i = 0; i < sizeof(lateTankMaps); i++) // Iterate over the list of designated maps
+			{
+				if (StrEqual(lateTankMaps[i], mapName)) // If the current map is in the list of designated maps
+				{
+					rndFlowTank = CalcFlow(GetRandomInt(60, 80));
+					GenericMap = false;
+					break;
+				}
+			}
+		}
+		if (GenericMap) //if both loops didn't match a mapname, this means current map does not need early or late tank spawn
+		{
+			rndFlowTank = CalcFlow(GetRandomInt(50, 80));
+		}
+	}
+	else
+	{
+		rndFlowTank = CalcFlow(10); // Fixed percentage
+		rndFlowWitch = CalcFlow(10);
+	}
+	
+	// What are the 1st and 2nd rounds? One map is divided into two rounds.The first team entered the saferoom or died — the 2nd round begins and the teams switch places
+	L4D2Direct_SetVSWitchFlowPercent(0, rndFlowWitch); // Set the map progression percentage at which the Witch will appear for the 1st round
+	L4D2Direct_SetVSWitchFlowPercent(1, rndFlowWitch); // For the 2nd round
+	L4D2Direct_SetVSTankFlowPercent(0, rndFlowTank); // Tank
+	L4D2Direct_SetVSTankFlowPercent(1, rndFlowTank);
+}
+
+public Action getBossFlowsm(int client, int args) // Read the percentage at which the Tank/Witch will spawn and output to chat
+{
+	int round = GameRules_GetProp("m_bInSecondHalfOfRound");
+	if (L4D2Direct_GetVSTankToSpawnThisRound(0) || L4D2Direct_GetVSTankToSpawnThisRound(1))
+	{
+		PrintToChat(client, "\x01Tank spawn: [\x04%.0f%%\x01]", GetTankFlow(round) * 100); // Tank spawn: [49%]
+	}
+	else
+	{
+		PrintToChat(client, "\x01Tank spawn: [\x04None\x01]"); // Tank spawn: [None]
+	}
+	
+	PrintToChat(client, "\x01Witch spawn: [\x04%.0f%%\x01]", GetWitchFlow(round) * 100); // Witch spawn: [49%]
+	return Plugin_Handled;
+}
+
+public void TankNotify(Event event, const char[] name, bool dontBroadcast) // Tank appeared!
+{
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	if (!tankIsAlive)
+	{
+		tankIsAlive = true; // So the message is not displayed twice
+		PrecacheSound("ui/pickup_secret01.wav");
+		EmitSoundToAll("ui/pickup_secret01.wav");
+		if (IsFakeClient(client)) {
+			CPrintToChatAll("%t", "TankIsHereBOT");
+		}
+		else {
+			for (int i = 1; i <= MaxClients; i++)
+			{
+				if (IsValidClient(i))
+				{
+					if (i == client) {
+						CPrintToChat(i, "%t", "PassTankNotify");
+					}
+					else {
+						CPrintToChat(i, "%t", "TankIsHere", client);
+					}
+				}
+			}
+		}
+	}
+}
+public void TankDead(Event event, const char[] name, bool dontBroadcast)
+{
+	int victim = GetClientOfUserId(event.GetInt("userid"));
+	if (victim != 0 && GetClientTeam(victim) == 3) // Infected is dead
+	{
+		int zClass = GetEntProp(victim, Prop_Send, "m_zombieClass"); // Smoker 1, Boomer 2, Hunter 3, Spitter 4, Jockey 5, Charger 6, Witch 7, Tank 8
+		if (zClass == 8) {  // Tank
+			tankIsAlive = false;
+		}
+	}
+}
+float CalcFlow(int per)
+{
+	return ((float(per) + 0.01) / 100.0) + GetConVarFloat(g_hVsBossBuffer) / L4D2Direct_GetMapMaxFlowDistance();
+}
+float GetTankFlow(int round)
+{
+	return L4D2Direct_GetVSTankFlowPercent(round) - GetConVarFloat(g_hVsBossBuffer) / L4D2Direct_GetMapMaxFlowDistance();
+}
+float GetWitchFlow(int round)
+{
+	return L4D2Direct_GetVSWitchFlowPercent(round) - GetConVarFloat(g_hVsBossBuffer) / L4D2Direct_GetMapMaxFlowDistance();
+}
+stock float map(float x, float in_min, float in_max, float out_min, float out_max) // Proportion
+{
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+stock bool IsValidClient(client)
+{
+	if (client > 0 && client <= MaxClients && IsClientInGame(client) && IsClientConnected(client) && !IsFakeClient(client)) {
+		return true;
+	}
+	return false;
+}
+
+// Editing the map's vscript
+public Action L4D_OnGetScriptValueInt(const char[] key, int &retVal)
+{
+	int val = retVal;
+	if (StrEqual(key, "ProhibitBosses")) {
+		val = 0;
+	}
+	if (StrEqual(key, "DisallowThreatType")) {
+		val = 0;
+	}
+	if (StrEqual(key, "TankLimit")) {
+		val = 1;
+	}
+	if (StrEqual(key, "WitchLimit")) {
+		val = 1;
+	}
+	
+	if (val != retVal) {
+		retVal = val;
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+} 
