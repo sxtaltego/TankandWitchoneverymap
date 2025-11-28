@@ -25,7 +25,7 @@ char lateTankMaps[][32] =  {  // maps with 60-80% spawn
 public Plugin myinfo = 
 {
 	name = "Tank&Witch on every map and !boss", 
-	author = "pa4H & Altego_SXT", 
+	author = "pa4H, Altego_SXT", 
 	description = "Spawn tank and witch in every chapter", 
 	version = "2.0", 
 	url = ""
@@ -173,7 +173,7 @@ public void TankNotify(Event event, const char[] name, bool dontBroadcast) // Ta
 				if (IsValidClient(i))
 				{
 					if (i == client) {
-						CPrintToChat(i, "%t", "PassTankNotify");
+						// CPrintToChat(i, "%t", "PassTankNotify");
 					}
 					else {
 						CPrintToChat(i, "%t", "TankIsHere", client);
