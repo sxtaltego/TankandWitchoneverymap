@@ -3,7 +3,7 @@ Forked l4d2 plugin that spawn tank and witch every chapter (original: https://gi
 
 Maps with early tank spawn (20-50%):
 1. c11m1_greenhouse (avoid fighting in room after drop)
-2. c4m2_sugarmill_a (avoid change of tank spawning inside elevator)
+2. c4m2_sugarmill_a (avoid chance of tank spawning inside elevator)
 3. c5m1_waterfront (avoid unspawned tank due to late flow)
 4. c13m1_alpinecreek (avoid fighting after drop)
 
