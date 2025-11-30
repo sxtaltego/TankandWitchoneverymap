@@ -9,3 +9,11 @@ Maps with early tank spawn (20-50%):
 
 Maps with late tank spawn (60-80%):
 1. c1m1_hotel
+
+Maps with without added tank spawn (scripted tank spawn unchanged):
+1. c5m5_bridge
+2. c7m1_docks
+3. c7m3_port
+4. c6m3_port
+5. c4m5_milltown_escape
+6. c13m2_southpinestream
