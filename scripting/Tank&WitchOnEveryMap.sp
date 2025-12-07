@@ -1,3 +1,21 @@
+#define PLUGIN_VERSION 		"1.2"
+
+/*======================================================================================
+	Change Log:
+
+1.0 (27-Nov-2025)
+	- Initial fork
+	- commented out pass tank notify chat print since it has no supporting functions
+1.1 (29-Nov-2025)
+	- Added early tank and late tank char array for appropriate maps
+1.2 (07-Dec-2025)
+	- Added plugin version cvar
+	- Added config file with boolean for tank spawn notify and sound
+
+======================================================================================*/
+
+#pragma semicolon 1
+#pragma newdecls required
 #include <sourcemod>
 #include <sdktools>    // For GameRules_GetProp();
 #include <left4dhooks> // https://forums.alliedmods.net/showthread.php?t=321696
@@ -9,6 +27,8 @@ char mapName[64]; // Map (c8m1_apartment)
 bool tankIsAlive = false; // Fix for the bug with displaying the Tank spawn message
 bool GenericMap; // switch for designated map, used for flow calculation
 Handle g_hVsBossBuffer; // For correct calculation of the Tank spawn percentage
+ConVar g_hCvarSpawnNotify, g_hCvarSpawnSound;
+bool g_bCvarSpawnNotify, g_bCvarSpawnSound;
 
 char restrictedMaps[][32] =  {  // Restricted maps
 	"c5m5_bridge", "c7m1_docks", "c7m3_port", "c6m3_port", "c4m5_milltown_escape", "c13m2_southpinestream"
@@ -27,17 +47,15 @@ public Plugin myinfo =
 	name = "Tank&Witch on every map and !boss", 
 	author = "pa4H & Altego_SXT", 
 	description = "Spawn tank and witch in every chapter", 
-	version = "2.0", 
+	version = PLUGIN_VERSION, 
 	url = ""
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	//RegConsoleCmd("sm_test", testTank, "");
 	
-	RegConsoleCmd("sm_boss", getBossFlowsm, "");
 	RegConsoleCmd("sm_tank", getBossFlowsm, "");
-	RegConsoleCmd("sm_witch", getBossFlowsm, "");
 	
 	HookEvent("round_start", RoundStartEvent, EventHookMode_PostNoCopy); // Server started
 	HookEvent("tank_spawn", TankNotify, EventHookMode_PostNoCopy); // Event notifying of the Tank's appearance
@@ -46,6 +64,16 @@ public OnPluginStart()
 	g_hVsBossBuffer = FindConVar("versus_boss_buffer"); // For correct calculation of the Tank spawn percentage
 	
 	LoadTranslations("pa4HTankSpawnNotify.phrases"); // translations/pa4HTankSpawnNotify.phrases.txt
+	
+	// ====================================================================================================
+	// CVARS
+	// ====================================================================================================
+	g_hCvarSpawnNotify = CreateConVar(			"Tank_WitchOnEveryMap_SpawnNotify",			"1",				"Whether or not notify in chat that a tank has spawned.", FCVAR_NOTIFY);
+	g_bCvarSpawnNotify = g_hCvarSpawnNotify.BoolValue;
+	g_hCvarSpawnSound = CreateConVar(			"Tank_WitchOnEveryMap_SpawnSound",			"1",				"Whether or not notify with a sound effect that a tank has spawned.", FCVAR_NOTIFY);
+	g_bCvarSpawnSound = g_hCvarSpawnSound.BoolValue;
+	CreateConVar(								"Tank_WitchOnEveryMap_version",			PLUGIN_VERSION,			"Tank&Witch every map version.", FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	AutoExecConfig(true,						"Tank_WitchOnEveryMap");
 }
 
 // stock Action testTank(int client, int args) // DEBUG
@@ -53,7 +81,7 @@ public OnPluginStart()
 	// return Plugin_Handled;
 // }
 
-public RoundStartEvent(Handle event, const char[] name, bool dontBroadcast) // Server started
+public void RoundStartEvent(Handle event, const char[] name, bool dontBroadcast) // Server started
 {
 	tankIsAlive = false; // Allow "Tank appeared" to be displayed in chat
 	if (GameRules_GetProp("m_bInSecondHalfOfRound") == 0) { CreateTimer(0.4, AdjustBossFlow); } // After Round Start, set the Tank spawn percentage with a delay
@@ -162,22 +190,25 @@ public void TankNotify(Event event, const char[] name, bool dontBroadcast) // Ta
 	if (!tankIsAlive)
 	{
 		tankIsAlive = true; // So the message is not displayed twice
-		PrecacheSound("ui/pickup_secret01.wav");
-		EmitSoundToAll("ui/pickup_secret01.wav");
-		if (IsFakeClient(client)) {
-			CPrintToChatAll("%t", "TankIsHereBOT");
+		if (g_bCvarSpawnSound)
+		{
+			PrecacheSound("ui/pickup_secret01.wav");
+			EmitSoundToAll("ui/pickup_secret01.wav");
 		}
-		else {
+		if (IsFakeClient(client)) 
+		{
+			if (g_bCvarSpawnNotify)
+			{
+				CPrintToChatAll("%t", "TankIsHereBOT");
+			}
+		}
+		else 
+		{
 			for (int i = 1; i <= MaxClients; i++)
 			{
-				if (IsValidClient(i))
-				{
-					if (i == client) {
-						CPrintToChat(i, "%t", "PassTankNotify");
-					}
-					else {
-						CPrintToChat(i, "%t", "TankIsHere", client);
-					}
+				if (IsValidClient(i) && g_bCvarSpawnNotify)
+				{		
+					CPrintToChat(i, "%t", "TankIsHere", client);
 				}
 			}
 		}
@@ -210,7 +241,7 @@ stock float map(float x, float in_min, float in_max, float out_min, float out_ma
 {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-stock bool IsValidClient(client)
+stock bool IsValidClient(int client)
 {
 	if (client > 0 && client <= MaxClients && IsClientInGame(client) && IsClientConnected(client) && !IsFakeClient(client)) {
 		return true;
