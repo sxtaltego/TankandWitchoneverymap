@@ -11,6 +11,8 @@
 1.2 (07-Dec-2025)
 	- Added plugin version cvar
 	- Added config file with boolean for tank spawn notify and sound
+1.3 (08-Dec-2025)
+	- Edited tank flow for certain maps (c8m1_apartment, c8m5_rooftop)
 
 ======================================================================================*/
 
@@ -31,7 +33,7 @@ ConVar g_hCvarSpawnNotify, g_hCvarSpawnSound;
 bool g_bCvarSpawnNotify, g_bCvarSpawnSound;
 
 char restrictedMaps[][32] =  {  // Restricted maps
-	"c5m5_bridge", "c7m1_docks", "c7m3_port", "c6m3_port", "c4m5_milltown_escape", "c13m2_southpinestream","c8m5_rooftop"
+	"c5m5_bridge", "c7m1_docks", "c7m3_port", "c6m3_port", "c4m5_milltown_escape", "c13m2_southpinestream","c8m5_rooftop","c8m1_apartment"
 };
 
 char earlyTankMaps[][32] =  {  // maps with 20-50% spawn
@@ -39,7 +41,7 @@ char earlyTankMaps[][32] =  {  // maps with 20-50% spawn
 };
 
 char lateTankMaps[][32] =  {  // maps with 60-70% spawn
-	"c1m1_hotel","c8m1_apartment"
+	"c1m1_hotel"
 };
 
 public Plugin myinfo = 
