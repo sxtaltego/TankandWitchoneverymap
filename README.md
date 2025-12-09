@@ -9,9 +9,8 @@ Maps with early tank spawn (20-50%):
 
 Maps with late tank spawn (60-70%):
 1. c1m1_hotel (avoid tank spawn before survivors get in elevator)
-2. c8m1_apartment (avoid tank fight within alley)
 
-Maps without added tank spawn (scripted tank spawn unchanged):
+Maps with no added tank spawn (original scripted tank spawn, if any, remains unchanged):
 1. c5m5_bridge
 2. c7m1_docks
 3. c7m3_port
@@ -19,3 +18,4 @@ Maps without added tank spawn (scripted tank spawn unchanged):
 5. c4m5_milltown_escape
 6. c13m2_southpinestream
 7. c8m5_rooftop
+8. c8m1_apartment
