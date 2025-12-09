@@ -31,15 +31,15 @@ ConVar g_hCvarSpawnNotify, g_hCvarSpawnSound;
 bool g_bCvarSpawnNotify, g_bCvarSpawnSound;
 
 char restrictedMaps[][32] =  {  // Restricted maps
-	"c5m5_bridge", "c7m1_docks", "c7m3_port", "c6m3_port", "c4m5_milltown_escape", "c13m2_southpinestream"
+	"c5m5_bridge", "c7m1_docks", "c7m3_port", "c6m3_port", "c4m5_milltown_escape", "c13m2_southpinestream","c8m5_rooftop"
 };
 
 char earlyTankMaps[][32] =  {  // maps with 20-50% spawn
 	"c11m1_greenhouse","c4m2_sugarmill_a","c5m1_waterfront","c13m1_alpinecreek"
 };
 
-char lateTankMaps[][32] =  {  // maps with 60-80% spawn
-	"c1m1_hotel"
+char lateTankMaps[][32] =  {  // maps with 60-70% spawn
+	"c1m1_hotel","c8m1_apartment"
 };
 
 public Plugin myinfo = 
@@ -68,9 +68,9 @@ public void OnPluginStart()
 	// ====================================================================================================
 	// CVARS
 	// ====================================================================================================
-	g_hCvarSpawnNotify = CreateConVar(			"Tank_WitchOnEveryMap_SpawnNotify",			"1",				"Whether or not notify in chat that a tank has spawned.", FCVAR_NOTIFY);
+	g_hCvarSpawnNotify = CreateConVar(			"Tank_WitchOnEveryMap_SpawnNotify",			"0",				"Whether or not notify in chat that a tank has spawned.", FCVAR_NOTIFY);
 	g_bCvarSpawnNotify = g_hCvarSpawnNotify.BoolValue;
-	g_hCvarSpawnSound = CreateConVar(			"Tank_WitchOnEveryMap_SpawnSound",			"1",				"Whether or not notify with a sound effect that a tank has spawned.", FCVAR_NOTIFY);
+	g_hCvarSpawnSound = CreateConVar(			"Tank_WitchOnEveryMap_SpawnSound",			"0",				"Whether or not notify with a sound effect that a tank has spawned.", FCVAR_NOTIFY);
 	g_bCvarSpawnSound = g_hCvarSpawnSound.BoolValue;
 	CreateConVar(								"Tank_WitchOnEveryMap_version",			PLUGIN_VERSION,			"Tank&Witch every map version.", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	AutoExecConfig(true,						"Tank_WitchOnEveryMap");
@@ -144,7 +144,7 @@ public void randomSpawn(bool isRandom) // Function setting the Witch and Tank sp
 			{
 				if (StrEqual(lateTankMaps[i], mapName)) // If the current map is in the list of designated maps
 				{
-					rndFlowTank = CalcFlow(GetRandomInt(60, 80));
+					rndFlowTank = CalcFlow(GetRandomInt(60, 70));
 					GenericMap = false;
 					break;
 				}
@@ -190,25 +190,25 @@ public void TankNotify(Event event, const char[] name, bool dontBroadcast) // Ta
 	if (!tankIsAlive)
 	{
 		tankIsAlive = true; // So the message is not displayed twice
-		if (g_bCvarSpawnSound)
+		if (g_bCvarSpawnSound == true)
 		{
 			PrecacheSound("ui/pickup_secret01.wav");
 			EmitSoundToAll("ui/pickup_secret01.wav");
 		}
-		if (IsFakeClient(client)) 
+		if (g_bCvarSpawnNotify == true)
 		{
-			if (g_bCvarSpawnNotify)
+			if (IsFakeClient(client)) 
 			{
 				CPrintToChatAll("%t", "TankIsHereBOT");
 			}
-		}
-		else 
-		{
-			for (int i = 1; i <= MaxClients; i++)
+			else 
 			{
-				if (IsValidClient(i) && g_bCvarSpawnNotify)
-				{		
-					CPrintToChat(i, "%t", "TankIsHere", client);
+				for (int i = 1; i <= MaxClients; i++)
+				{
+					if (IsValidClient(i))
+					{		
+						CPrintToChat(i, "%t", "TankIsHere", client);
+					}
 				}
 			}
 		}
