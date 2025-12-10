@@ -6,6 +6,7 @@ Maps with early tank spawn (20-50%):
 2. c4m2_sugarmill_a (avoid chance of tank spawning inside elevator)
 3. c5m1_waterfront (avoid unspawned tank due to late flow)
 4. c13m1_alpinecreek (avoid fighting after drop)
+5. c12m3_bridge (avoid missed tank spawn at late flow)
 
 Maps with late tank spawn (60-70%):
 1. c1m1_hotel (avoid tank spawn before survivors get in elevator)
