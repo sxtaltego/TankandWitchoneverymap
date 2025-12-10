@@ -37,7 +37,7 @@ char restrictedMaps[][32] =  {  // Restricted maps
 };
 
 char earlyTankMaps[][32] =  {  // maps with 20-50% spawn
-	"c11m1_greenhouse","c4m2_sugarmill_a","c5m1_waterfront","c13m1_alpinecreek"
+	"c11m1_greenhouse","c4m2_sugarmill_a","c5m1_waterfront","c13m1_alpinecreek","c12m3_bridge"
 };
 
 char lateTankMaps[][32] =  {  // maps with 60-70% spawn
