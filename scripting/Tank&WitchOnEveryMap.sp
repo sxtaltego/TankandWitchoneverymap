@@ -59,7 +59,7 @@ char lateTankMaps[][32] =  {  // maps with 60-70% spawn
 
 public Plugin myinfo = 
 {
-	name = "Tank&Witch on every map and !boss", 
+	name = "Tank&Witch on every map", 
 	author = "pa4H & Altego_SXT", 
 	description = "Spawn tank and witch in every chapter", 
 	version = PLUGIN_VERSION, 
@@ -147,7 +147,6 @@ public void RoundStartEvent(Handle event, const char[] name, bool dontBroadcast)
 	tankIsAlive = false; // Allow "Tank appeared" to be displayed in chat
 	if (GameRules_GetProp("m_bInSecondHalfOfRound") == 0) { CreateTimer(0.4, AdjustBossFlow); } // After Round Start, set the Tank spawn percentage with a delay
 	
-	maxdist=0.0;
 	maxflow=0.0;
 	delete g_hTimer;
 	g_hTimer = CreateTimer(g_fCvarTimer, TimerUpdate, _, TIMER_REPEAT);
@@ -177,7 +176,8 @@ Action TimerUpdate(Handle timer)
 	{
 		float dist;
 		int area;
-
+		maxdist=0.0;
+		
 		for( int i = 1; i <= MaxClients; i++ )
 		{
 			if( IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) )
