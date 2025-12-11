@@ -20,3 +20,6 @@ Maps with no added tank spawn (original scripted tank spawn, if any, remains unc
 6. c13m2_southpinestream
 7. c8m5_rooftop
 8. c8m1_apartment
+
+Command:
+!tank: display flow percent of tank, witch, and furthest survivor (excluding dead survivor)
