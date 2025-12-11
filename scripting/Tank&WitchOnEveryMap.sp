@@ -87,19 +87,15 @@ public void OnPluginStart()
 	// From L4D2Direct
 	// ====================================================================================================
 	
-	Address TheNavMesh = GameConfGetAddress(hGameData, "TerrorNavMesh");
-	if( TheNavMesh == view_as<Address>(-1) ) SetFailState("Failed to load offset \"TheNavMesh\" address.", GAMEDATA);
+	// Address TheNavMesh = GameConfGetAddress(hGameData, "TerrorNavMesh");
+	// if( TheNavMesh == view_as<Address>(-1) ) SetFailState("Failed to load offset \"TheNavMesh\" address.", GAMEDATA);
 	
-	int offs = GameConfGetOffset(hGameData, "TerrorNavMesh::m_fMapMaxFlowDistance");
-	if( offs == -1 ) SetFailState("Failed to load \"m_fMapMaxFlowDistance\" offset.", GAMEDATA);
+	// int offs = GameConfGetOffset(hGameData, "TerrorNavMesh::m_fMapMaxFlowDistance");
+	// if( offs == -1 ) SetFailState("Failed to load \"m_fMapMaxFlowDistance\" offset.", GAMEDATA);
 	// Address g_PtrGetMapMaxFlowDistance = TheNavMesh + view_as<Address>(offs);
 	
 	m_flow = GameConfGetOffset(hGameData, "m_flow");
 	if( m_flow == -1 ) SetFailState("Failed to load \"m_flow\" offset.", GAMEDATA);
-	
-	// ====================================================================================================
-	// From L4D2Direct
-	// ====================================================================================================
 	
 	StartPrepSDKCall(SDKCall_Player);
 	if( PrepSDKCall_SetFromConf(hGameData, SDKConf_Virtual, "CTerrorPlayer::GetLastKnownArea") == false )
