@@ -1,4 +1,4 @@
-#define PLUGIN_VERSION 		"1.2"
+#define PLUGIN_VERSION 		"1.4"
 
 /*======================================================================================
 	Change Log:
@@ -12,7 +12,9 @@
 	- Added plugin version cvar
 	- Added config file with boolean for tank spawn notify and sound
 1.3 (08-Dec-2025)
-	- Edited tank flow for certain maps (c8m1_apartment, c8m5_rooftop)
+	- Edited tank flow for certain maps (c8m1_apartment, c8m5_rooftop, c12m3_bridge)
+1.4 (11-Dec-2025)
+	- Added flow calculation for furthest survivor
 
 ======================================================================================*/
 
@@ -22,15 +24,22 @@
 #include <sdktools>    // For GameRules_GetProp();
 #include <left4dhooks> // https://forums.alliedmods.net/showthread.php?t=321696
 #include <colors>
+#define GAMEDATA			"Tank&WitchOnEveryMap"
 
-char mapName[64]; // Map (c8m1_apartment)
-// Every map has a progress percentage. From 0% to 100%
+char mapName[64]; // Map (c8m1_apartment). Every map has a progress percentage. From 0% to 100%
 
 bool tankIsAlive = false; // Fix for the bug with displaying the Tank spawn message
-bool GenericMap; // switch for designated map, used for flow calculation
+bool GenericMap, g_bMapStarted; // switch for designated map, used for flow calculation
 Handle g_hVsBossBuffer; // For correct calculation of the Tank spawn percentage
 ConVar g_hCvarSpawnNotify, g_hCvarSpawnSound;
 bool g_bCvarSpawnNotify, g_bCvarSpawnSound;
+int m_flow;
+Handle g_hPlayerGetLastKnownArea, g_hPlayerGetFlowDistance, g_hTimer;
+float g_fCvarTimer = 2.0; //how often is the flow check executed
+float maxdist, maxflow;
+//====================================================================================================
+// Map list
+// ====================================================================================================
 
 char restrictedMaps[][32] =  {  // Restricted maps
 	"c5m5_bridge", "c7m1_docks", "c7m3_port", "c6m3_port", "c4m5_milltown_escape", "c13m2_southpinestream","c8m5_rooftop","c8m1_apartment"
@@ -44,6 +53,10 @@ char lateTankMaps[][32] =  {  // maps with 60-70% spawn
 	"c1m1_hotel"
 };
 
+// ====================================================================================================
+// General info
+// ====================================================================================================
+
 public Plugin myinfo = 
 {
 	name = "Tank&Witch on every map and !boss", 
@@ -53,14 +66,69 @@ public Plugin myinfo =
 	url = ""
 }
 
+// ====================================================================================================
+// Forward start
+// ====================================================================================================
+
 public void OnPluginStart()
 {
-	//RegConsoleCmd("sm_test", testTank, "");
+	// ====================================================================================================
+	// GAMEDATA
+	// ====================================================================================================
+	
+	char sPath[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, sPath, sizeof(sPath), "gamedata/%s.txt", GAMEDATA);
+	if( FileExists(sPath) == false ) SetFailState("\n==========\nMissing required file: \"%s\".\n==========", sPath);
+
+	Handle hGameData = LoadGameConfigFile(GAMEDATA);
+	if( hGameData == null ) SetFailState("Failed to load \"%s.txt\" gamedata.", GAMEDATA);
+	
+	// ====================================================================================================
+	// From L4D2Direct
+	// ====================================================================================================
+	
+	Address TheNavMesh = GameConfGetAddress(hGameData, "TerrorNavMesh");
+	if( TheNavMesh == view_as<Address>(-1) ) SetFailState("Failed to load offset \"TheNavMesh\" address.", GAMEDATA);
+	
+	int offs = GameConfGetOffset(hGameData, "TerrorNavMesh::m_fMapMaxFlowDistance");
+	if( offs == -1 ) SetFailState("Failed to load \"m_fMapMaxFlowDistance\" offset.", GAMEDATA);
+	// Address g_PtrGetMapMaxFlowDistance = TheNavMesh + view_as<Address>(offs);
+	
+	m_flow = GameConfGetOffset(hGameData, "m_flow");
+	if( m_flow == -1 ) SetFailState("Failed to load \"m_flow\" offset.", GAMEDATA);
+	
+	// ====================================================================================================
+	// From L4D2Direct
+	// ====================================================================================================
+	
+	StartPrepSDKCall(SDKCall_Player);
+	if( PrepSDKCall_SetFromConf(hGameData, SDKConf_Virtual, "CTerrorPlayer::GetLastKnownArea") == false )
+		SetFailState("Failed to find signature: CTerrorPlayer::GetLastKnownArea");
+	PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+	g_hPlayerGetLastKnownArea = EndPrepSDKCall();
+	if( g_hPlayerGetLastKnownArea == null )
+		SetFailState("Failed to create SDKCall: CTerrorPlayer::GetLastKnownArea");
+
+	StartPrepSDKCall(SDKCall_Player);
+	if( PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "PlayerGetFlowDistance") == false )
+		SetFailState("Failed to find signature: PlayerGetFlowDistance");
+	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+	PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
+	g_hPlayerGetFlowDistance = EndPrepSDKCall();
+	if( g_hPlayerGetFlowDistance == null )
+		SetFailState("Failed to create SDKCall: PlayerGetFlowDistance");
+
+	delete hGameData;
+	
+	// ====================================================================================================
+	// Cmd & event hooks & translations
+	// ====================================================================================================
 	
 	RegConsoleCmd("sm_tank", getBossFlowsm, "");
 	
-	HookEvent("round_start", RoundStartEvent, EventHookMode_PostNoCopy); // Server started
-	HookEvent("tank_spawn", TankNotify, EventHookMode_PostNoCopy); // Event notifying of the Tank's appearance
+	HookEvent("round_start", RoundStartEvent, EventHookMode_PostNoCopy);
+	HookEvent("round_end",	Event_RoundEnd,	EventHookMode_PostNoCopy);
+	HookEvent("tank_spawn", TankNotify, EventHookMode_PostNoCopy); 
 	HookEvent("player_death", TankDead, EventHookMode_Pre);
 	
 	g_hVsBossBuffer = FindConVar("versus_boss_buffer"); // For correct calculation of the Tank spawn percentage
@@ -78,17 +146,67 @@ public void OnPluginStart()
 	AutoExecConfig(true,						"Tank_WitchOnEveryMap");
 }
 
-// stock Action testTank(int client, int args) // DEBUG
-// {
-	// return Plugin_Handled;
-// }
-
 public void RoundStartEvent(Handle event, const char[] name, bool dontBroadcast) // Server started
 {
 	tankIsAlive = false; // Allow "Tank appeared" to be displayed in chat
 	if (GameRules_GetProp("m_bInSecondHalfOfRound") == 0) { CreateTimer(0.4, AdjustBossFlow); } // After Round Start, set the Tank spawn percentage with a delay
 	
+	maxdist=0.0;
+	maxflow=0.0;
+	delete g_hTimer;
+	g_hTimer = CreateTimer(g_fCvarTimer, TimerUpdate, _, TIMER_REPEAT);
 }
+
+void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
+{
+	ResetPlugin();
+}
+
+void ResetPlugin()
+{
+	delete g_hTimer;
+}
+
+public void OnMapStart()
+{
+	g_bMapStarted = true;
+}
+
+// ====================================================================================================
+// Timerupdate to calculate flow
+// ====================================================================================================
+Action TimerUpdate(Handle timer)
+{
+	if( g_bMapStarted )
+	{
+		float dist;
+		int area;
+
+		for( int i = 1; i <= MaxClients; i++ )
+		{
+			if( IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) )
+			{
+				area = SDKCall(g_hPlayerGetLastKnownArea, i);
+
+				if( area )
+				{
+					dist += view_as<float>(LoadFromAddress(view_as<Address>(area + m_flow), NumberType_Int32));
+					if ( dist >= maxdist )
+					{
+						maxdist=dist;
+					}
+				}
+			}
+		}
+
+		maxflow = maxdist / L4D2Direct_GetMapMaxFlowDistance(); 
+		// PrintToServer("range(%d) g_iDistance(%d) dist(%f) g_fDistance(%f)", range, g_iDistance, dist, g_fDistance);
+		
+	}
+
+	return Plugin_Continue;
+}
+
 public Action AdjustBossFlow(Handle timer)
 {
 	L4D2Direct_SetVSTankToSpawnThisRound(0, true); // We command the Director to spawn the Tank in the 1st round
@@ -183,6 +301,8 @@ public Action getBossFlowsm(int client, int args) // Read the percentage at whic
 	}
 	
 	PrintToChat(client, "\x01Witch spawn: [\x04%.0f%%\x01]", GetWitchFlow(round) * 100); // Witch spawn: [49%]
+	PrintToChat(client, "\x01Furthest survivor: [\x04%.0f%%\x01]", maxflow * 100); // Furthest survivor: [49%]
+	
 	return Plugin_Handled;
 }
 
@@ -216,6 +336,7 @@ public void TankNotify(Event event, const char[] name, bool dontBroadcast) // Ta
 		}
 	}
 }
+
 public void TankDead(Event event, const char[] name, bool dontBroadcast)
 {
 	int victim = GetClientOfUserId(event.GetInt("userid"));
@@ -227,22 +348,27 @@ public void TankDead(Event event, const char[] name, bool dontBroadcast)
 		}
 	}
 }
+
 float CalcFlow(int per)
 {
 	return ((float(per) + 0.01) / 100.0) + GetConVarFloat(g_hVsBossBuffer) / L4D2Direct_GetMapMaxFlowDistance();
 }
+
 float GetTankFlow(int round)
 {
 	return L4D2Direct_GetVSTankFlowPercent(round) - GetConVarFloat(g_hVsBossBuffer) / L4D2Direct_GetMapMaxFlowDistance();
 }
+
 float GetWitchFlow(int round)
 {
 	return L4D2Direct_GetVSWitchFlowPercent(round) - GetConVarFloat(g_hVsBossBuffer) / L4D2Direct_GetMapMaxFlowDistance();
 }
+
 stock float map(float x, float in_min, float in_max, float out_min, float out_max) // Proportion
 {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
+
 stock bool IsValidClient(int client)
 {
 	if (client > 0 && client <= MaxClients && IsClientInGame(client) && IsClientConnected(client) && !IsFakeClient(client)) {
