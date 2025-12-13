@@ -33,8 +33,9 @@ bool GenericMap, g_bMapStarted; // switch for designated map, used for flow calc
 Handle g_hVsBossBuffer; // For correct calculation of the Tank spawn percentage
 ConVar g_hCvarSpawnNotify, g_hCvarSpawnSound;
 bool g_bCvarSpawnNotify, g_bCvarSpawnSound;
-int m_flow;
-Handle g_hPlayerGetLastKnownArea, g_hPlayerGetFlowDistance, g_hTimer;
+// int m_flow;
+// Handle g_hPlayerGetLastKnownArea, g_hPlayerGetFlowDistance, g_hTimer;
+Handle g_hTimer;
 float g_fCvarTimer = 2.0; //how often is the flow check executed
 float maxdist, maxflow;
 //====================================================================================================
@@ -76,45 +77,31 @@ public void OnPluginStart()
 	// GAMEDATA
 	// ====================================================================================================
 	
-	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, sizeof(sPath), "gamedata/%s.txt", GAMEDATA);
-	if( FileExists(sPath) == false ) SetFailState("\n==========\nMissing required file: \"%s\".\n==========", sPath);
+	// char sPath[PLATFORM_MAX_PATH];
+	// BuildPath(Path_SM, sPath, sizeof(sPath), "gamedata/%s.txt", GAMEDATA);
+	// if( FileExists(sPath) == false ) SetFailState("\n==========\nMissing required file: \"%s\".\n==========", sPath);
 
-	Handle hGameData = LoadGameConfigFile(GAMEDATA);
-	if( hGameData == null ) SetFailState("Failed to load \"%s.txt\" gamedata.", GAMEDATA);
+	// Handle hGameData = LoadGameConfigFile(GAMEDATA);
+	// if( hGameData == null ) SetFailState("Failed to load \"%s.txt\" gamedata.", GAMEDATA);
 	
-	// ====================================================================================================
-	// From L4D2Direct
-	// ====================================================================================================
-	
-	// Address TheNavMesh = GameConfGetAddress(hGameData, "TerrorNavMesh");
-	// if( TheNavMesh == view_as<Address>(-1) ) SetFailState("Failed to load offset \"TheNavMesh\" address.", GAMEDATA);
-	
-	// int offs = GameConfGetOffset(hGameData, "TerrorNavMesh::m_fMapMaxFlowDistance");
-	// if( offs == -1 ) SetFailState("Failed to load \"m_fMapMaxFlowDistance\" offset.", GAMEDATA);
-	// Address g_PtrGetMapMaxFlowDistance = TheNavMesh + view_as<Address>(offs);
-	
-	m_flow = GameConfGetOffset(hGameData, "m_flow");
-	if( m_flow == -1 ) SetFailState("Failed to load \"m_flow\" offset.", GAMEDATA);
-	
-	StartPrepSDKCall(SDKCall_Player);
-	if( PrepSDKCall_SetFromConf(hGameData, SDKConf_Virtual, "CTerrorPlayer::GetLastKnownArea") == false )
-		SetFailState("Failed to find signature: CTerrorPlayer::GetLastKnownArea");
-	PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
-	g_hPlayerGetLastKnownArea = EndPrepSDKCall();
-	if( g_hPlayerGetLastKnownArea == null )
-		SetFailState("Failed to create SDKCall: CTerrorPlayer::GetLastKnownArea");
+	// StartPrepSDKCall(SDKCall_Player);
+	// if( PrepSDKCall_SetFromConf(hGameData, SDKConf_Virtual, "CTerrorPlayer::GetLastKnownArea") == false )
+		// SetFailState("Failed to find signature: CTerrorPlayer::GetLastKnownArea");
+	// PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+	// g_hPlayerGetLastKnownArea = EndPrepSDKCall();
+	// if( g_hPlayerGetLastKnownArea == null )
+		// SetFailState("Failed to create SDKCall: CTerrorPlayer::GetLastKnownArea");
 
-	StartPrepSDKCall(SDKCall_Player);
-	if( PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "PlayerGetFlowDistance") == false )
-		SetFailState("Failed to find signature: PlayerGetFlowDistance");
-	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
-	PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
-	g_hPlayerGetFlowDistance = EndPrepSDKCall();
-	if( g_hPlayerGetFlowDistance == null )
-		SetFailState("Failed to create SDKCall: PlayerGetFlowDistance");
+	// StartPrepSDKCall(SDKCall_Player);
+	// if( PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "PlayerGetFlowDistance") == false )
+		// SetFailState("Failed to find signature: PlayerGetFlowDistance");
+	// PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+	// PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
+	// g_hPlayerGetFlowDistance = EndPrepSDKCall();
+	// if( g_hPlayerGetFlowDistance == null )
+		// SetFailState("Failed to create SDKCall: PlayerGetFlowDistance");
 
-	delete hGameData;
+	// delete hGameData;
 	
 	// ====================================================================================================
 	// Cmd & event hooks & translations
@@ -175,23 +162,24 @@ Action TimerUpdate(Handle timer)
 	if( g_bMapStarted )
 	{
 		float dist;
-		int area;
+		// int area;
 		maxdist=0.0;
 		
 		for( int i = 1; i <= MaxClients; i++ )
 		{
 			if( IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i) )
 			{
-				area = SDKCall(g_hPlayerGetLastKnownArea, i);
+				// area = SDKCall(g_hPlayerGetLastKnownArea, i);
 
-				if( area )
-				{
-					dist += view_as<float>(LoadFromAddress(view_as<Address>(area + m_flow), NumberType_Int32));
+				// if( area )
+				// {
+					// dist += view_as<float>(LoadFromAddress(view_as<Address>(area + m_flow), NumberType_Int32));
+					dist = L4D2Direct_GetFlowDistance(i);
 					if ( dist >= maxdist )
 					{
 						maxdist=dist;
 					}
-				}
+				// }
 			}
 		}
 
