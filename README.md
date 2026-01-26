@@ -11,7 +11,7 @@ Maps with early tank spawn (30-50%):
 Maps with late tank spawn (60-70%):
 1. c1m1_hotel (avoid tank spawn before survivors get in elevator)
 
-Maps with no added tank spawn (original scripted tank spawn, if any, remains unchanged):
+Maps with no RNG tank spawn (original scripted tank spawn, if any, remains unchanged):
 1. c5m5_bridge
 2. c7m1_docks
 3. c7m3_port
