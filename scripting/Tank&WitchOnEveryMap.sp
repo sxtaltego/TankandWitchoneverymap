@@ -17,6 +17,9 @@
 	- Added flow calculation for furthest survivor
 1.5 (12-Dec-2025)
 	- Used L4D2Direct_GetFlowDistance to calculate survivor flow instead of gamedata file
+1.6 (26-Jan-2026)
+	- Modified the tank spawn flow
+	- No RNG witch on c6m1_riverbank
 
 ======================================================================================*/
 
@@ -39,7 +42,7 @@ Handle g_hTimer;
 float g_fCvarTimer = 2.0; //how often is the flow check executed
 float maxdist, maxflow;
 //====================================================================================================
-// Map list
+// Map list for tank spawn
 // ====================================================================================================
 
 char restrictedMaps[][32] =  {  // Restricted maps
@@ -190,13 +193,20 @@ public void randomSpawn(bool isRandom) // Function setting the Witch and Tank sp
 	
 	if (isRandom) // Get a random percentage.If 0.9, it means it will be 80%. If 0.2, it means it will be 10%
 	{
-		rndFlowWitch = CalcFlow(GetRandomInt(20, 45)); // witch spawn does not need to be specific
+		if (StrEqual("c6m1_riverbank",mapName))
+		{
+			rndFlowWitch = 200.0; // disable witch spawn
+		}
+		else
+		{
+			rndFlowWitch = CalcFlow(GetRandomInt(20, 45)); // non-specific RNG witch
+		}
 		
 		for (int i = 0; i < sizeof(earlyTankMaps); i++) // Iterate over the list of designated maps
 		{
 			if (StrEqual(earlyTankMaps[i], mapName)) // If the current map is in the list of designated maps
 			{
-				rndFlowTank = CalcFlow(GetRandomInt(20, 50));
+				rndFlowTank = CalcFlow(GetRandomInt(30, 50));
 				GenericMap = false;
 				break;
 			}
@@ -215,7 +225,7 @@ public void randomSpawn(bool isRandom) // Function setting the Witch and Tank sp
 		}
 		if (GenericMap) //if both loops didn't match a mapname, this means current map does not need early or late tank spawn
 		{
-			rndFlowTank = CalcFlow(GetRandomInt(50, 80));
+			rndFlowTank = CalcFlow(GetRandomInt(40, 60));
 		}
 	}
 	else
