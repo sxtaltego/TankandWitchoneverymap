@@ -11,8 +11,6 @@ Maps with early tank spawn (30-50%):
 Maps with late tank spawn (60-70%):
 1. c1m1_hotel (avoid tank spawn before survivors get in elevator)
 
-Maps with non-specific tank spawn (40-60%)
-
 Maps with no added tank spawn (original scripted tank spawn, if any, remains unchanged):
 1. c5m5_bridge
 2. c7m1_docks
@@ -22,6 +20,9 @@ Maps with no added tank spawn (original scripted tank spawn, if any, remains unc
 6. c13m2_southpinestream
 7. c8m5_rooftop
 8. c8m1_apartment
+
+Maps with non-specific tank spawn (40-60%)
+1. Rest of the maps
 
 Command:
 !tank: display flow percent of tank, witch, and furthest survivor (excluding dead survivor)
