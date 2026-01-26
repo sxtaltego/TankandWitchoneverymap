@@ -1,7 +1,7 @@
 # TankandWitchoneverymap
 Forked l4d2 plugin that spawn tank and witch every chapter (original: https://github.com/pa4H/L4D2-pa4H-Plugins/tree/main/L4D2-Plugins/TankandWitchoneverymap)
 
-Maps with early tank spawn (20-50%):
+Maps with early tank spawn (30-50%):
 1. c11m1_greenhouse (avoid fighting in room after drop)
 2. c4m2_sugarmill_a (avoid chance of tank spawning inside elevator)
 3. c5m1_waterfront (avoid unspawned tank due to late flow)
@@ -10,6 +10,8 @@ Maps with early tank spawn (20-50%):
 
 Maps with late tank spawn (60-70%):
 1. c1m1_hotel (avoid tank spawn before survivors get in elevator)
+
+Maps with non-specific tank spawn (40-60%)
 
 Maps with no added tank spawn (original scripted tank spawn, if any, remains unchanged):
 1. c5m5_bridge
