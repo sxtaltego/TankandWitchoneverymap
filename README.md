@@ -21,6 +21,9 @@ Maps with no RNG tank spawn (original scripted tank spawn, if any, remains uncha
 7. c8m5_rooftop
 8. c8m1_apartment
 
+Maps with no RNG witch spawn (original scripted witch spawn, if any, remains unchanged)
+1. c6m1_riverbank
+
 Maps with non-specific tank spawn (40-60%)
 1. Rest of the maps
 
