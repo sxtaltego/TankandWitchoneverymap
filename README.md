@@ -23,6 +23,7 @@ Maps with no RNG tank spawn (original scripted tank spawn, if any, remains uncha
 
 Maps with no RNG witch spawn (original scripted witch spawn, if any, remains unchanged)
 1. c6m1_riverbank
+2. c1m1_hotel
 
 Maps with non-specific tank spawn (40-60%)
 1. Rest of the maps
