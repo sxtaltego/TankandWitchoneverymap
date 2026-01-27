@@ -19,7 +19,7 @@
 	- Used L4D2Direct_GetFlowDistance to calculate survivor flow instead of gamedata file
 1.6 (26-Jan-2026)
 	- Modified the tank spawn flow
-	- No RNG witch on c6m1_riverbank
+	- No RNG witch on c6m1_riverbank,c1m1_hotel
 
 ======================================================================================*/
 
@@ -55,6 +55,10 @@ char earlyTankMaps[][32] =  {  // maps with 20-50% spawn
 
 char lateTankMaps[][32] =  {  // maps with 60-70% spawn
 	"c1m1_hotel"
+};
+
+char restrictedWitch[][32] = {	//maps without RNG witch
+	"c6m1_riverbank","c1m1_hotel"
 };
 
 // ====================================================================================================
@@ -193,14 +197,18 @@ public void randomSpawn(bool isRandom) // Function setting the Witch and Tank sp
 	
 	if (isRandom) // Get a random percentage.If 0.9, it means it will be 80%. If 0.2, it means it will be 10%
 	{
-		if (StrEqual("c6m1_riverbank",mapName))
+		for (int i = 0; i < sizeof(restrictedWitch); i++) // Iterate over the list of designated maps
 		{
-			rndFlowWitch = 200.0; // disable witch spawn
+			if (StrEqual(restrictedWitch[i], mapName)) // If the current map is in the list of designated maps
+			{
+				rndFlowWitch = 200.0;
+			}
+			else
+			{
+				rndFlowWitch = CalcFlow(GetRandomInt(20, 45)); // non-specific RNG witch
+			}
 		}
-		else
-		{
-			rndFlowWitch = CalcFlow(GetRandomInt(20, 45)); // non-specific RNG witch
-		}
+		
 		
 		for (int i = 0; i < sizeof(earlyTankMaps); i++) // Iterate over the list of designated maps
 		{
