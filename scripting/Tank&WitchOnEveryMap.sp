@@ -175,6 +175,16 @@ public Action AdjustBossFlow(Handle timer)
 		}
 	}
 	
+	for (int i = 0; i < sizeof(restrictedWitch); i++) // Iterate over the list of restricted maps
+	{
+		if (StrEqual(restrictedWitch[i], mapName)) // If the current map is in the list of restricted maps
+		{
+			L4D2Direct_SetVSWitchToSpawnThisRound(0, false); // Forbid the Tank spawn
+			L4D2Direct_SetVSWitchToSpawnThisRound(1, false);
+			break;
+		}
+	}
+	
 	if (L4D_IsMissionFinalMap() == true) // If playing the last map.The director does not spawn the Tank on the 1st and last map
 	{
 		randomSpawn(false); // Set the Tank and Witch spawn percentages WITHOUT randomness
@@ -197,18 +207,8 @@ public void randomSpawn(bool isRandom) // Function setting the Witch and Tank sp
 	
 	if (isRandom) // Get a random percentage.If 0.9, it means it will be 80%. If 0.2, it means it will be 10%
 	{
-		for (int i = 0; i < sizeof(restrictedWitch); i++) // Iterate over the list of designated maps
-		{
-			if (StrEqual(restrictedWitch[i], mapName)) // If the current map is in the list of designated maps
-			{
-				rndFlowWitch = 200.0;
-			}
-			else
-			{
-				rndFlowWitch = CalcFlow(GetRandomInt(20, 45)); // non-specific RNG witch
-			}
-		}
-		
+
+		rndFlowWitch = CalcFlow(GetRandomInt(20, 45)); // non-specific RNG witch
 		
 		for (int i = 0; i < sizeof(earlyTankMaps); i++) // Iterate over the list of designated maps
 		{
