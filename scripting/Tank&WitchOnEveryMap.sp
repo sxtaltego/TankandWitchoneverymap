@@ -20,6 +20,8 @@
 1.6 (26-Jan-2026)
 	- Modified the tank spawn flow
 	- No RNG witch on c6m1_riverbank,c1m1_hotel
+1.7 (23-Jul-2026)
+	- No RNG witch on c5m5_bridge
 
 ======================================================================================*/
 
@@ -58,7 +60,7 @@ char lateTankMaps[][32] =  {  // maps with 60-70% spawn
 };
 
 char restrictedWitch[][32] = {	//maps without RNG witch
-	"c6m1_riverbank","c1m1_hotel"
+	"c6m1_riverbank","c1m1_hotel","c5m5_bridge"
 };
 
 // ====================================================================================================
